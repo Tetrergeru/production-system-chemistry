@@ -20,6 +20,8 @@ namespace GraphFunc
         private List<string> _evaluation;
 
         private HashSet<int> _usedTrueRules;
+        
+        private HashSet<int> _usedRules;
 
         public IEnumerable<string> Eval(IEnumerable<string> startItems, string desiredItem)
         {
@@ -46,6 +48,62 @@ namespace GraphFunc
             }
 
             return new[] {"Реакция невозможна!"};
+        }
+
+        public IEnumerable<string> EvalBack(IEnumerable<string> startItems, string desiredItem)
+        {
+            var goal = ItemByNameOrTag(desiredItem);
+            if (goal < 0)
+                return new[] {$"Cant find item {desiredItem}"};
+
+            _checkedItems = new Dictionary<int, int>();
+            foreach (var item in startItems)
+            {
+                var idx = ItemByNameOrTag(item);
+                if (goal < 0)
+                    return new[] {$"Cant find item {desiredItem}"};
+                _checkedItems[idx] = -1;
+            }
+
+            _usedRules = new HashSet<int>();
+            EvalBack(goal);
+            if (_checkedItems.ContainsKey(goal))
+            {
+                _evaluation = new List<string>();
+                _usedTrueRules = new HashSet<int>();
+                CollectEvaluation(goal);
+                return _evaluation;
+            }
+
+
+            return new[] { "Реакция невозможна!" };
+        }
+
+        private void EvalBack(int goal)
+        {
+            if (_checkedItems.ContainsKey(goal))
+                return;
+            var rules = _rules
+                .Select((r, i) => (r.left, r.right, r.trueRule, rule: i))
+                .Where(r => r.right == goal)
+                .ToList();
+            foreach (var rule in rules)
+            {
+                if (_usedRules.Contains(rule.rule))
+                    continue;
+                _usedRules.Add(rule.rule);
+                foreach (var item in rule.left.Where(item => !_checkedItems.ContainsKey(item) && item != goal))
+                    EvalBack(item);
+
+                if (_checkedItems.ContainsKey(goal))
+                    return;
+                
+                if (rule.left.All(item => _checkedItems.ContainsKey(item)))
+                {
+                    _checkedItems[goal] = rule.rule;
+                    break;
+                }
+            }
         }
 
         private void Eval(int goal)

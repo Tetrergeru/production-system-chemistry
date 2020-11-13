@@ -21,6 +21,8 @@ namespace GraphFunc
 
         private readonly Evaluator _evaluator;
 
+        private bool _evalDirection = false;
+        
         public Form(Evaluator evaluator)
         {
             _categories = evaluator.Items.Select(i => i.tag).OrderBy(x => x).ToList();
@@ -66,11 +68,24 @@ namespace GraphFunc
                 AddCategory(cat, controlsPanel);
             Controls.Add(controlsPanel);
 
+            var directionBox = new CheckBox
+            {
+                Top = controlsPanel.Top + controlsPanel.Height + 10,
+                Left = controlsPanel.Left,
+                Width = 15,
+            };
+            directionBox.CheckedChanged += (sender, args) =>
+            {
+                _evalDirection = directionBox.Checked;
+                Evaluate();
+            };
+            Controls.Add(directionBox);
+            
             var goButton = new Button
             {
                 Top = controlsPanel.Top + controlsPanel.Height,
-                Left = controlsPanel.Left,
-                Width = controlsPanel.Width,
+                Left = controlsPanel.Left + 15,
+                Width = controlsPanel.Width - 15,
                 Height = 30,
                 Text = "GO",
             };
@@ -131,8 +146,8 @@ namespace GraphFunc
         private void Evaluate()
         {
             _evaluationBox.Text =
-                $"Давайте-ка попробуем получить {_targetElement}\r\n"
-                + string.Join("\r\n", _evaluator.Eval(_checked, _targetElement));
+                $"Давайте-ка попробуем получить {_targetElement} {(_evalDirection ? "обратным" : "прямым")} путём\r\n"
+                + string.Join("\r\n", _evalDirection ? _evaluator.EvalBack(_checked, _targetElement) : _evaluator.Eval(_checked, _targetElement));
         }
     }
 }
